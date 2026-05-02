@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useMemo } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import { auth, signInWithGoogle, logout as firebaseLogout } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Sample data for marketing agency / software dev team
 const initialTasks = [
@@ -65,9 +67,30 @@ const TaskContext = createContext();
 
 export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState(initialTasks);
-  const [currentUser] = useState({ id: 'u-1', name: 'Admin User', role: 'Admin' }); // Simplified RBAC
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [teamPulse, setTeamPulse] = useState({ emoji: '☕', status: 'Deep Work Mode' });
   const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser({ id: user.uid, name: user.displayName || 'User', email: user.email, role: 'Member' });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const login = async () => {
+    await signInWithGoogle();
+  };
+
+  const logout = async () => {
+    await firebaseLogout();
+  };
 
   const addToast = (message, emoji = '🚀') => {
     const id = Date.now();
@@ -136,6 +159,9 @@ export function TaskProvider({ children }) {
   const value = useMemo(() => ({
     tasks,
     currentUser,
+    loading,
+    login,
+    logout,
     teamPulse,
     setTeamPulse,
     toasts,
@@ -143,7 +169,7 @@ export function TaskProvider({ children }) {
     updateTaskStatus,
     addComment,
     toggleTaskReaction
-  }), [tasks, currentUser, teamPulse, toasts]);
+  }), [tasks, currentUser, loading, teamPulse, toasts]);
 
   return (
     <TaskContext.Provider value={value}>

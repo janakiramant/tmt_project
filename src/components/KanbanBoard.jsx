@@ -1,23 +1,28 @@
 import { useState } from 'react';
 import { useTaskContext } from '../contexts/TaskContext';
-import { MessageSquare, Calendar, Clock, User, Plus } from 'lucide-react';
+import { MessageSquare, Calendar, Clock, User, Plus, Sparkles } from 'lucide-react';
+import { generateTaskSummary } from '../lib/gemini';
 
 const columns = ['To Do', 'In Progress', 'In Review', 'Done'];
 
 function TaskCard({ task, onStatusChange, onClick }) {
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'High': return 'bg-danger/20 text-danger border-danger/20';
-      case 'Medium': return 'bg-warning/30 text-yellow-600 border-warning/30';
-      case 'Low': return 'bg-success/20 text-success border-success/20';
-      default: return 'bg-border text-textSecondary';
+      case 'High': return 'bg-[#B91C1C] text-white border-[#B91C1C]'; // High contrast red
+      case 'Medium': return 'bg-[#CA8A04] text-white border-[#CA8A04]'; // High contrast amber
+      case 'Low': return 'bg-[#15803D] text-white border-[#15803D]'; // High contrast green
+      default: return 'bg-gray-700 text-white border-gray-700';
     }
   };
 
   return (
     <div 
+      role="button"
+      tabIndex={0}
+      aria-label={`Task: ${task.title}, Priority: ${task.priority}, Status: ${task.status}`}
       onClick={() => onClick(task)}
-      className="bg-surface border border-border p-5 rounded-3xl shadow-sm hover:border-primary/50 hover:shadow-bento transition-all cursor-pointer group active:scale-[0.98]"
+      onKeyDown={(e) => { if(e.key === 'Enter') onClick(task); }}
+      className="bg-surface border border-border p-5 rounded-3xl shadow-sm hover:border-primary/50 hover:shadow-bento transition-all cursor-pointer group active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary"
     >
       <div className="flex justify-between items-start mb-3">
         <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-lg border ${getPriorityColor(task.priority)}`}>
@@ -62,6 +67,15 @@ export default function KanbanBoard() {
   const { tasks, updateTaskStatus, addComment, currentUser } = useTaskContext();
   const [selectedTask, setSelectedTask] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const [aiSummary, setAiSummary] = useState('');
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+
+  const handleGenerateSummary = async (task) => {
+    setGeneratingSummary(true);
+    const summary = await generateTaskSummary(task.title, task.description);
+    setAiSummary(summary);
+    setGeneratingSummary(false);
+  };
 
   const handleDragStart = (e, id) => {
     e.dataTransfer.setData('taskId', id);
@@ -91,18 +105,20 @@ export default function KanbanBoard() {
         </button>
       </div>
 
-      <div className="flex-1 flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
+      <div className="flex-1 flex gap-6 overflow-x-auto pb-4 custom-scrollbar" role="region" aria-label="Kanban Columns">
         {columns.map(column => (
           <div 
             key={column} 
             className="flex flex-col min-w-[320px] w-[320px] bg-background/50 rounded-3xl p-4 border border-border"
+            role="list"
+            aria-label={`${column} column`}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, column)}
           >
             <div className="flex items-center justify-between mb-4 px-1">
               <h3 className="font-bold text-textPrimary flex items-center gap-2">
                 {column}
-                <span className="bg-surface text-textSecondary text-xs px-2.5 py-0.5 rounded-lg border border-border shadow-sm">
+                <span className="bg-surface text-textSecondary text-xs px-2.5 py-0.5 rounded-lg border border-border shadow-sm" aria-label={`${tasks.filter(t => t.status === column).length} tasks`}>
                   {tasks.filter(t => t.status === column).length}
                 </span>
               </h3>
@@ -113,13 +129,19 @@ export default function KanbanBoard() {
                 <div 
                   key={task.id} 
                   draggable 
-                  onDragStart={(e) => handleDragStart(e, task.id)}
+                  role="listitem"
+                  aria-grabbed="false"
+                  onDragStart={(e) => {
+                    handleDragStart(e, task.id);
+                    e.currentTarget.setAttribute('aria-grabbed', 'true');
+                  }}
+                  onDragEnd={(e) => e.currentTarget.setAttribute('aria-grabbed', 'false')}
                 >
                   <TaskCard task={task} onStatusChange={updateTaskStatus} onClick={setSelectedTask} />
                 </div>
               ))}
               {/* Drop Zone hint */}
-              <div className="h-20 rounded-2xl border-2 border-dashed border-border bg-surface/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <div className="h-20 rounded-2xl border-2 border-dashed border-border bg-surface/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" aria-hidden="true">
                  <span className="text-textSecondary font-medium text-sm">Drop here</span>
               </div>
             </div>
@@ -145,8 +167,12 @@ export default function KanbanBoard() {
                 <h2 className="text-2xl font-bold text-textPrimary">{selectedTask.title}</h2>
               </div>
               <button 
-                onClick={() => setSelectedTask(null)}
+                onClick={() => {
+                  setSelectedTask(null);
+                  setAiSummary('');
+                }}
                 className="p-2 hover:bg-border rounded-xl text-textSecondary hover:text-textPrimary transition-colors"
+                aria-label="Close Modal"
               >
                 ✕
               </button>
@@ -180,7 +206,27 @@ export default function KanbanBoard() {
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-textPrimary mb-3">Description</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-bold text-textPrimary">Description</h3>
+                  <button 
+                    onClick={() => handleGenerateSummary(selectedTask)}
+                    disabled={generatingSummary}
+                    className="flex items-center gap-2 text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Sparkles size={14} />
+                    {generatingSummary ? 'Summarizing...' : 'AI Summary'}
+                  </button>
+                </div>
+
+                {aiSummary && (
+                  <div className="mb-4 bg-primary/5 border border-primary/20 p-4 rounded-2xl">
+                    <div className="flex items-center gap-2 text-primary font-bold text-sm mb-1">
+                      <Sparkles size={14} /> AI Summary
+                    </div>
+                    <p className="text-sm font-medium text-textPrimary">{aiSummary}</p>
+                  </div>
+                )}
+
                 <p className="text-textSecondary font-medium leading-relaxed bg-background p-5 rounded-3xl border border-border shadow-sm">
                   {selectedTask.description}
                 </p>

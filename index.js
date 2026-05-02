@@ -9,8 +9,7 @@ const app = express();
 
 // 1. Port Binding & Host Configuration
 // Cloud Run provides the PORT environment variable. If not set, default to 8080.
-const PORT = process.env.PORT || 8080;
-const HOST = '0.0.0.0'; // Bind to all interfaces to allow external traffic
+const port = process.env.PORT || 8080;
 
 // 2. Health Check readiness endpoint for Cloud Run startup probe
 app.get('/health', (req, res) => {
@@ -26,8 +25,6 @@ app.get('*', (req, res) => {
 });
 
 // 3. Start the server
-app.listen(PORT, HOST, () => {
-  console.log(`Server is starting...`);
-  console.log(`Listening on http://${HOST}:${PORT}`);
-  console.log(`Health check available at http://${HOST}:${PORT}/health`);
+app.listen(port, '0.0.0.0', () => {
+  console.log('Server running on port', port);
 });
