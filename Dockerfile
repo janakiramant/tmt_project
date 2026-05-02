@@ -32,8 +32,15 @@ COPY index.js ./
 # Copy only the built static files from the build stage
 COPY --from=build /app/dist ./dist
 
+# Set permissions for node user
+RUN chown -R node:node /app
+
+# Switch to non-root user
+USER node
+
 # Cloud Run defaults to port 8080, but provides the PORT environment variable
 EXPOSE 8080
 
 # Serve the application using our custom Express server via npm start
 CMD ["npm", "start"]
+
