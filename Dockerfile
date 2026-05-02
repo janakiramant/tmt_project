@@ -22,8 +22,12 @@ FROM node:20-slim
 # Set the working directory
 WORKDIR /app
 
-# Install 'serve', a static file serving package
-RUN npm install -g serve
+# Copy package.json and install production dependencies
+COPY package*.json ./
+RUN npm install --omit=dev
+
+# Copy the server file
+COPY server.js ./
 
 # Copy only the built static files from the build stage
 COPY --from=build /app/dist ./dist
@@ -31,5 +35,5 @@ COPY --from=build /app/dist ./dist
 # Cloud Run defaults to port 8080, but provides the PORT environment variable
 EXPOSE 8080
 
-# Serve the static files on the port specified by Cloud Run
-CMD ["sh", "-c", "serve -s dist -l tcp://0.0.0.0:${PORT:-8080}"]
+# Serve the application using our custom Express server
+CMD ["node", "server.js"]
