@@ -160,24 +160,49 @@ export default function ListView() {
                             initial={{ opacity: 0, scale: 0.95, y: -10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            className="absolute right-4 top-full mt-1 bg-surface border border-border shadow-bento rounded-xl p-1.5 z-30 min-w-[140px] text-left"
+                            className="absolute right-4 top-full mt-1 bg-surface border border-border shadow-bento rounded-2xl p-2 z-30 min-w-[180px] text-left"
                           >
+                            <div className="px-3 py-1 mb-2">
+                                <span className="text-[10px] font-bold text-textSecondary uppercase tracking-widest">Move to Stage</span>
+                            </div>
+                            <div className="grid grid-cols-1 gap-1 mb-3">
+                                {['To Do', 'In Progress', 'In Review', 'Done'].map(status => (
+                                    <button 
+                                        key={status}
+                                        onClick={() => {
+                                            updateTaskStatus(task.id, status);
+                                            setActiveMenu(null);
+                                        }}
+                                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                            task.status === status ? 'bg-primary/10 text-primary' : 'hover:bg-background text-textSecondary'
+                                        }`}
+                                    >
+                                        {status}
+                                        {task.status === status && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="h-px bg-border my-2" />
+                            
+                            <div className="px-3 py-1 mb-1">
+                                <span className="text-[10px] font-bold text-textSecondary uppercase tracking-widest">Manage Task</span>
+                            </div>
                             <button 
                               onClick={() => {
                                 duplicateTask(task);
                                 setActiveMenu(null);
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-textPrimary hover:bg-background rounded-lg transition-colors"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-textPrimary hover:bg-background rounded-xl transition-colors"
                             >
                               <Copy size={14} className="text-primary" /> Duplicate
                             </button>
-                            <div className="h-px bg-border my-1" />
                             <button 
                               onClick={() => {
                                 setDeleteConfirm(task.id);
                                 setActiveMenu(null);
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-danger hover:bg-danger/10 rounded-xl transition-colors"
                             >
                               <Trash2 size={14} /> Delete Task
                             </button>
