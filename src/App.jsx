@@ -9,18 +9,21 @@ import { useTaskContext } from './contexts/TaskContext';
 function Toasts() {
   const { toasts } = useTaskContext();
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-      <AnimatePresence>
+    <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 pointer-events-none w-full max-w-sm">
+      <AnimatePresence mode="popLayout">
         {toasts.map(toast => (
           <motion.div
             key={toast.id}
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-            className="bg-surface border border-border shadow-bento rounded-lg p-4 flex items-center gap-3 pointer-events-auto"
+            layout
+            initial={{ opacity: 0, y: -40, scale: 0.9, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.9, filter: 'blur(4px)', transition: { duration: 0.2 } }}
+            className="bg-surface/80 backdrop-blur-md border border-primary/20 shadow-xl rounded-2xl p-4 flex items-center gap-4 pointer-events-auto w-max min-w-[280px]"
           >
-            <span className="text-xl">{toast.emoji}</span>
-            <p className="text-sm font-medium text-textPrimary">{toast.message}</p>
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-xl shadow-inner border border-primary/10">
+                {toast.emoji}
+            </div>
+            <p className="text-sm font-bold text-textPrimary tracking-tight">{toast.message}</p>
           </motion.div>
         ))}
       </AnimatePresence>
