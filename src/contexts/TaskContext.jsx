@@ -156,6 +156,25 @@ export function TaskProvider({ children }) {
     }));
   };
 
+  const deleteTask = (taskId) => {
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    setTasks(tasks.filter(task => task.id !== taskId));
+    addToast(`Task deleted: ${taskToDelete?.title}`, '🗑️');
+  };
+
+  const duplicateTask = (task) => {
+    const newTask = {
+      ...task,
+      id: `t-${Date.now()}`,
+      title: `${task.title} (Copy)`,
+      status: 'To Do',
+      reactions: {},
+      comments: []
+    };
+    setTasks([...tasks, newTask]);
+    addToast(`Task duplicated: ${task.title}`, '👯');
+  };
+
   const value = useMemo(() => ({
     tasks,
     currentUser,
@@ -168,7 +187,9 @@ export function TaskProvider({ children }) {
     addTask,
     updateTaskStatus,
     addComment,
-    toggleTaskReaction
+    toggleTaskReaction,
+    deleteTask,
+    duplicateTask
   }), [tasks, currentUser, loading, teamPulse, toasts]);
 
   return (

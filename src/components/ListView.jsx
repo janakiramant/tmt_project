@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useTaskContext } from '../contexts/TaskContext';
-import { MoreHorizontal, MessageSquare, ArrowUpDown, SmilePlus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { MoreHorizontal, MessageSquare, ArrowUpDown, SmilePlus, Trash2, Copy, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ListView() {
-  const { tasks, updateTaskStatus, toggleTaskReaction } = useTaskContext();
+  const { tasks, updateTaskStatus, toggleTaskReaction, deleteTask, duplicateTask } = useTaskContext();
   const [sortField, setSortField] = useState('dueDate');
   const [sortDesc, setSortDesc] = useState(false);
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -45,7 +47,7 @@ export default function ListView() {
   const emojis = ['🚀', '👀', '✅', '🔥', '🎉'];
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className="animate-in fade-in duration-500 relative">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-textPrimary tracking-tight">List View</h1>
         <p className="text-textSecondary font-medium mt-2">Manage tasks in a highly-dense data grid.</p>
@@ -141,10 +143,48 @@ export default function ListView() {
                        </div>
                     </div>
                   </td>
-                  <td className="p-4 text-right">
-                    <button className="p-1.5 text-textSecondary hover:text-primary hover:bg-primary/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                  <td className="p-4 text-right relative">
+                    <button 
+                      onClick={() => setActiveMenu(activeMenu === task.id ? null : task.id)}
+                      className={`p-1.5 rounded-lg transition-colors ${activeMenu === task.id ? 'bg-primary text-white' : 'text-textSecondary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100'}`}
+                    >
                       <MoreHorizontal size={18} />
                     </button>
+                    
+                    {/* Action Menu Dropdown */}
+                    <AnimatePresence>
+                      {activeMenu === task.id && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setActiveMenu(null)} />
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            className="absolute right-4 top-full mt-1 bg-surface border border-border shadow-bento rounded-xl p-1.5 z-30 min-w-[140px] text-left"
+                          >
+                            <button 
+                              onClick={() => {
+                                duplicateTask(task);
+                                setActiveMenu(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-textPrimary hover:bg-background rounded-lg transition-colors"
+                            >
+                              <Copy size={14} className="text-primary" /> Duplicate
+                            </button>
+                            <div className="h-px bg-border my-1" />
+                            <button 
+                              onClick={() => {
+                                setDeleteConfirm(task.id);
+                                setActiveMenu(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={14} /> Delete Task
+                            </button>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </td>
                 </tr>
               ))}
@@ -152,6 +192,44 @@ export default function ListView() {
           </table>
         </div>
       </motion.div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-surface border border-border w-full max-w-sm rounded-3xl shadow-bento p-6 text-center"
+            >
+              <div className="w-16 h-16 bg-danger/10 text-danger rounded-2xl flex items-center justify-center mx-auto mb-4 border border-danger/20">
+                <AlertTriangle size={32} />
+              </div>
+              <h2 className="text-xl font-bold text-textPrimary mb-2">Delete Task?</h2>
+              <p className="text-textSecondary text-sm mb-6 font-medium">Are you sure you want to remove this task? This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 bg-background border border-border hover:bg-border text-textPrimary font-bold py-2.5 rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    deleteTask(deleteConfirm);
+                    setDeleteConfirm(null);
+                  }}
+                  className="flex-1 bg-danger hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-danger/20"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
