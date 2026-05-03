@@ -64,17 +64,41 @@ function TaskCard({ task, onStatusChange, onClick }) {
 }
 
 export default function KanbanBoard() {
-  const { tasks, updateTaskStatus, addComment, currentUser } = useTaskContext();
+  const { tasks, updateTaskStatus, addComment, currentUser, addTask } = useTaskContext();
   const [selectedTask, setSelectedTask] = useState(null);
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [aiSummary, setAiSummary] = useState('');
   const [generatingSummary, setGeneratingSummary] = useState(false);
+
+  const [newTaskData, setNewTaskData] = useState({
+    title: '',
+    description: '',
+    priority: 'Medium',
+    assignee: currentUser?.name || '',
+    dueDate: new Date().toISOString().split('T')[0]
+  });
 
   const handleGenerateSummary = async (task) => {
     setGeneratingSummary(true);
     const summary = await generateTaskSummary(task.title, task.description);
     setAiSummary(summary);
     setGeneratingSummary(false);
+  };
+
+  const handleAddTask = (e) => {
+    e.preventDefault();
+    if (newTaskData.title.trim()) {
+      addTask(newTaskData);
+      setShowNewTaskModal(false);
+      setNewTaskData({
+        title: '',
+        description: '',
+        priority: 'Medium',
+        assignee: currentUser?.name || '',
+        dueDate: new Date().toISOString().split('T')[0]
+      });
+    }
   };
 
   const handleDragStart = (e, id) => {
@@ -99,7 +123,10 @@ export default function KanbanBoard() {
           <h1 className="text-3xl font-bold text-textPrimary tracking-tight">Kanban Board</h1>
           <p className="text-textSecondary font-medium mt-1">Drag and drop tasks to update workflow stages.</p>
         </div>
-        <button className="bg-primary hover:bg-primaryHover text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-colors shadow-md shadow-primary/20">
+        <button 
+          onClick={() => setShowNewTaskModal(true)}
+          className="bg-primary hover:bg-primaryHover text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-colors shadow-md shadow-primary/20"
+        >
           <Plus size={18} />
           New Task
         </button>
@@ -148,6 +175,73 @@ export default function KanbanBoard() {
           </div>
         ))}
       </div>
+
+      {/* New Task Modal */}
+      {showNewTaskModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border border-border w-full max-w-md rounded-3xl shadow-bento flex flex-col">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-background">
+              <h2 className="text-xl font-bold text-textPrimary">Create New Task</h2>
+              <button onClick={() => setShowNewTaskModal(false)} className="text-textSecondary hover:text-textPrimary">✕</button>
+            </div>
+            <form onSubmit={handleAddTask} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-textSecondary uppercase block mb-1">Title</label>
+                <input 
+                  autoFocus
+                  required
+                  type="text" 
+                  value={newTaskData.title}
+                  onChange={e => setNewTaskData({...newTaskData, title: e.target.value})}
+                  placeholder="Task title..."
+                  className="w-full bg-background border border-border rounded-xl p-3 text-sm font-medium text-textPrimary focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-textSecondary uppercase block mb-1">Description</label>
+                <textarea 
+                  required
+                  value={newTaskData.description}
+                  onChange={e => setNewTaskData({...newTaskData, description: e.target.value})}
+                  placeholder="Task details..."
+                  className="w-full bg-background border border-border rounded-xl p-3 text-sm font-medium text-textPrimary focus:outline-none focus:border-primary min-h-[100px] resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-textSecondary uppercase block mb-1">Priority</label>
+                  <select 
+                    value={newTaskData.priority}
+                    onChange={e => setNewTaskData({...newTaskData, priority: e.target.value})}
+                    className="w-full bg-background border border-border rounded-xl p-3 text-sm font-bold text-textPrimary focus:outline-none focus:border-primary appearance-none"
+                  >
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-textSecondary uppercase block mb-1">Due Date</label>
+                  <input 
+                    type="date" 
+                    value={newTaskData.dueDate}
+                    onChange={e => setNewTaskData({...newTaskData, dueDate: e.target.value})}
+                    className="w-full bg-background border border-border rounded-xl p-3 text-sm font-bold text-textPrimary focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primaryHover text-white font-bold py-3 rounded-xl transition-all shadow-md shadow-primary/20"
+                >
+                  Create Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Task Detail Modal */}
       {selectedTask && (
